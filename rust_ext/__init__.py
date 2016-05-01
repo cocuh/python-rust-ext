@@ -2,7 +2,7 @@ import glob
 import os
 from distutils.cmd import Command
 from distutils.command.build_ext import build_ext
-from setuptools.command.install_lib import install_lib as _install_lib
+from distutils.command.install_lib import install_lib as _install_lib
 
 import subprocess as sp
 import sys
@@ -26,22 +26,24 @@ class RustModule:
         self.is_color_output = color_output
 
     def get_compile_command(self):
-        args = ['cargo', 'build', '--manifest-path', self.cargo_toml_path]
+        args = ['cargo', 'build']
         if self.is_release:
             args.append('--release')
         if self.is_color_output:
             args.extend(['--color', 'always'])
         return args
 
-    def get_basedir(self):
-        return os.path.basename(self.cargo_toml_path)
+    def get_parent_path(self):
+        return os.path.dirname(self.cargo_toml_path)
 
     def get_dylib_path(self):
-        return glob.glob(os.path.join([
-            self.get_basedir(),
+        paths= glob.glob(os.path.join(
+            self.get_parent_path(),
+            'target',
             'release' if self.is_release else 'debug',
-            '*{}'.format(self.get_ext())
-        ]))[0]  # XXX: :poop:
+            '*{ext}'.format(ext=self.get_ext())
+        ))  # XXX: :poop:
+        return paths[0]
 
     @staticmethod
     def get_ext():
@@ -59,6 +61,7 @@ class RustBuildCommand(Command):
         self.modules = []
         self.parallel = None
         self.build_temp = None
+        self.cargo_clean = False
 
     def finalize_options(self):
         self.set_undefined_options(
@@ -68,8 +71,9 @@ class RustBuildCommand(Command):
         )
 
     def run(self):
-        for module in self.modules:
-            self.clean_module(module)
+        if self.cargo_clean:
+            for module in self.modules:
+                self.clean_module(module)
 
         for module in self.modules:
             self.compile_module(module)
@@ -78,7 +82,7 @@ class RustBuildCommand(Command):
             self.deploy(module)
 
     def clean_module(self, module: RustModule):
-        working_directory = module.get_basedir()
+        working_directory = module.get_parent_path()
         try:
             execute_streaming_stdout(['cargo', 'clean'], cwd=working_directory)
         except Exception as e:  # fixme:!!!!
@@ -88,7 +92,7 @@ class RustBuildCommand(Command):
         args = module.get_compile_command()
         args = self.extend_command_args(args)
 
-        working_directory = module.get_basedir()
+        working_directory = module.get_parent_path()
 
         try:
             execute_streaming_stdout(args, cwd=working_directory)
@@ -103,6 +107,7 @@ class RustBuildCommand(Command):
         dylib_path = module.get_dylib_path()
         build_ext = self.get_finalized_command('build_ext')  # type: build_ext
         ext_fullpath = build_ext.get_ext_fullpath(module.name)
+        self.mkpath(os.path.dirname(ext_fullpath))
         self.copy_file(dylib_path, ext_fullpath)
 
     def extend_command_args(self, args):
