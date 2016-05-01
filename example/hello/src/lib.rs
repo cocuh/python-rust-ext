@@ -1,6 +1,6 @@
 #![crate_type = "dylib"]
-
-#[macro_use] extern crate cpython;
+#[macro_use]
+extern crate cpython;
 
 use cpython::{PyObject, PyResult, PyModule, Python, PyTuple, PyDict};
 
@@ -19,6 +19,6 @@ fn run(py: Python, args: &PyTuple, kwargs: &PyDict) -> PyResult<PyObject> {
     Ok(py.None())
 }
 
-fn val(_:Python) -> PyResult<i32> {
+fn val(_: Python) -> PyResult<i32> {
     Ok(42)
 }
