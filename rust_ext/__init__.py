@@ -2,7 +2,7 @@ import glob
 import os
 from distutils.cmd import Command
 from distutils.command.build_ext import build_ext
-from setuptools.command import install_lib as _install_lib
+from setuptools.command.install_lib import install_lib as _install_lib
 
 import subprocess as sp
 import sys
@@ -136,6 +136,9 @@ class RustBuildCommand(Command):
         else:
             res = cls
         return res
+
+
+build_rust = RustBuildCommand
 
 
 class install_with_rust(_install_lib):
