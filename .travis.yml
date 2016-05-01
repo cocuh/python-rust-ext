@@ -1,0 +1,10 @@
+language: python
+rust:
+  - nightly
+python:
+  - "3.5"
+install:
+  - "python setup.py install"
+  - "cd example; python setup.py install; cd .."
+script:
+  - "python setup.py test"
