@@ -5,8 +5,9 @@ python:
   - "3.5"
 before_script:
   - "mkdir ~/rust-installer ~/rust"
-  - "curl -sL https://static.rust-lang.org/rustup.sh -o ~/rust-installer/rustup.sh"
+  - "curl -L https://static.rust-lang.org/rustup.sh -o ~/rust-installer/rustup.sh"
   - "sh ~/rust-installer/rustup.sh --prefix=~/rust --spec=nightly -y --disable-sudo 2> /dev/null"
+  - "export PATH=$PATH:~/rust/bin/"
   - "python setup.py install"
   - "cd example; python setup.py install; cd .."
 script:
