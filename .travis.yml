@@ -5,7 +5,7 @@ python:
   - "3.5"
 install:
   - "sudo apt-get install python3"
-  - "python setup.py install"
-  - "cd example; python setup.py install; cd .."
+  - "sudo python setup.py install"
+  - "cd example; sudo python setup.py install; cd .."
 script:
   - "python setup.py test"
