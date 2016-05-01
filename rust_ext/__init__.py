@@ -81,14 +81,14 @@ class RustBuildCommand(Command):
         for module in self.modules:
             self.deploy(module)
 
-    def clean_module(self, module: RustModule):
+    def clean_module(self, module):
         working_directory = module.get_parent_path()
         try:
             execute_streaming_stdout(['cargo', 'clean'], cwd=working_directory)
         except Exception as e:  # fixme:!!!!
             raise e
 
-    def compile_module(self, module: RustModule):
+    def compile_module(self, module):
         args = module.get_compile_command()
         args = self.extend_command_args(args)
 
@@ -103,7 +103,7 @@ class RustBuildCommand(Command):
             raise e
         return module
 
-    def deploy(self, module: RustModule):
+    def deploy(self, module):
         dylib_path = module.get_dylib_path()
         build_ext = self.get_finalized_command('build_ext')  # type: build_ext
         ext_fullpath = build_ext.get_ext_fullpath(module.name)
@@ -114,34 +114,6 @@ class RustBuildCommand(Command):
         if self.parallel:
             args.extend(['--jobs', '-1'])
         return args
-
-    @classmethod
-    def register_module(cls, modules):
-        if not isinstance(modules, [list, tuple]):
-            modules = [modules]
-        else:
-            modules = modules
-        res = cls._gen_new_class_if_needed()
-        res.modules = modules
-        return res
-
-    @classmethod
-    def set_options(cls, **kwargs):
-        # todo:impl here, ex) quite
-        res = cls._gen_new_class_if_needed()
-        return res
-
-    @classmethod
-    def _gen_new_class_if_needed(cls):  # XXX: improve this name
-        if cls == RustBuildCommand:
-            class _RestBuildCommand(cls):
-                pass
-
-            res = _RestBuildCommand
-        else:
-            res = cls
-        return res
-
 
 build_rust = RustBuildCommand
 
