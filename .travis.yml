@@ -1,10 +1,11 @@
-language: rust
+language: python
 rust:
   - nightly
 python:
   - "3.5"
 install:
-  - "source ~/virtualenv/python3.5/bin/activate"
+  - "curl -sL https://static.rust-lang.org/rustup.sh -o ~/rust-installer/rustup.sh"
+  - "sh ~/rust-installer/rustup.sh --prefix=~/rust --spec=nightly -y --disable-sudo 2> /dev/null"
   - "python setup.py install"
   - "cd example; python setup.py install; cd .."
 script:
