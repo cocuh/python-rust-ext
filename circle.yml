@@ -1,11 +1,11 @@
 dependencies:
   pre:
+    - curl -sf -L https://static.rust-lang.org/rustup.sh | sh /dev/stdin --channel=nightly --yes
     - python setup.py install
     - cd example
     - python setup.py install
     - cd ..
     - pip install nose
-    - curl -sf -L https://static.rust-lang.org/rustup.sh | sh /dev/stdin --channel=nightly --yes
 test:
   override:
     - python setup.py test
