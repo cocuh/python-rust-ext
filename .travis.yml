@@ -1,9 +1,10 @@
-language: python
+language: rust
 rust:
   - nightly
 python:
   - "3.5"
 install:
+  - "apt-get install python3"
   - "python setup.py install"
   - "cd example; python setup.py install; cd .."
 script:
