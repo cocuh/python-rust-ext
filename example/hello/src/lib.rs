@@ -2,7 +2,7 @@
 #[macro_use]
 extern crate cpython;
 
-use cpython::{PyObject, PyResult, PyModule, Python, PyTuple, PyDict};
+use cpython::{PyString, PyResult, PyModule, Python, PyTuple, PyDict, ToPyObject};
 
 py_module_initializer!(hello, inithello, PyInit_hello, |py, m| {
     try!(m.add(py, "__doc__", "This module is youjo hello module."));
@@ -11,12 +11,12 @@ py_module_initializer!(hello, inithello, PyInit_hello, |py, m| {
     Ok(())
 });
 
-fn run(py: Python, args: &PyTuple, kwargs: &PyDict) -> PyResult<PyObject> {
+fn run(py: Python, args: &PyTuple, kwargs: &PyDict) -> PyResult<PyString> {
     println!("hello youjo!");
     for arg in args.iter(py) {
         println!("Rust got {}", arg);
     }
-    Ok(py.None())
+    Ok("hello youjo!".to_py_object(py))
 }
 
 fn val(_: Python) -> PyResult<i32> {
