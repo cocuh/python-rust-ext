@@ -1,0 +1,17 @@
+dependencies:
+  pre:
+    - python setup.py install
+    - cd example
+    - python setup.py install
+    - cd ..
+    - pip install nose
+    - curl -sf -L https://static.rust-lang.org/rustup.sh | sh /dev/stdin --channel=nightly --yes
+test:
+  override:
+    - python setup.py test
+
+machine:
+  python:
+    version:
+#      - 2.7.5
+      - 3.5.1
