@@ -4,8 +4,8 @@ rust:
 python:
   - "3.5"
 install:
-  - "sudo apt-get install python3"
-  - "sudo python setup.py install"
-  - "cd example; sudo python setup.py install; cd .."
+  - "source ~/virtualenv/python3.5/bin/activate"
+  - "python setup.py install"
+  - "cd example; python setup.py install; cd .."
 script:
   - "python setup.py test"
