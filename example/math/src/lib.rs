@@ -33,15 +33,11 @@ fn enum_prime(py: Python, num: i32) -> PyResult<PyList> {
 }
 
 fn sleep_sort(py: Python, items: PyList) -> PyResult<PyList> {
-    let mut vec = Vec::new();
-    for item in items.iter(py) {
-        let x: u32 = try!(item.extract(py));
-        print!("{},", x);
-        vec.push(x);
-    }
-    println!("");
-    let result = Arc::new(Mutex::new(Vec::new()));
-    vec.into_iter()
+    let result = Arc::new(Mutex::new(Vec::<u32>::new()));
+    items.iter(py)
+        .map(|x|x.extract(py))
+        .filter(|x|x.is_ok())
+        .map(|x| x.ok().unwrap())
         .map(|x| {
             let result = result.clone();
             thread::spawn(move || {
