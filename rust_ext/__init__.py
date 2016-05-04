@@ -59,14 +59,12 @@ class RustModule:
 class RustBuildCommand(Command):
     def initialize_options(self):
         self.modules = []
-        self.parallel = None
         self.build_temp = None
         self.cargo_clean = False
 
     def finalize_options(self):
         self.set_undefined_options(
                 'build',
-                ('parallel', 'parallel'),
                 ('build_temp', 'build_temp'),
         )
 
@@ -111,8 +109,6 @@ class RustBuildCommand(Command):
         self.copy_file(dylib_path, ext_fullpath)
 
     def extend_command_args(self, args):
-        if self.parallel:
-            args.extend(['--jobs', '-1'])
         return args
 
 build_rust = RustBuildCommand
@@ -120,5 +116,5 @@ build_rust = RustBuildCommand
 
 class install_with_rust(_install_lib):
     def build(self):
-        super(install_with_rust, self).build()
+        _install_lib.build(self)
         self.run_command('build_rust')
