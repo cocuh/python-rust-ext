@@ -8,7 +8,16 @@ import subprocess as sp
 import sys
 
 
+class RustCleanError(Exception):
+    pass
+
+
+class RustCompileError(Exception):
+    pass
+
+
 def execute_streaming_stdout(args, cwd=None):
+    print('[python-rust-ext]execute "{}"'.format(' '.join(args)))
     process = sp.Popen(args, stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True, cwd=cwd)
     for line in iter(process.stdout.readline, ''):
         sys.stdout.write(line)
@@ -16,6 +25,8 @@ def execute_streaming_stdout(args, cwd=None):
     for line in iter(process.stderr.readline, ''):
         sys.stderr.write(line)
         sys.stderr.flush()
+    process.wait()
+    return process
 
 
 class RustModule:
@@ -57,6 +68,11 @@ class RustModule:
 
 
 class RustBuildCommand(Command):
+    description = "rust build command"
+    user_options = [
+        ('modules=', None, 'rust modules'),
+    ]
+
     def initialize_options(self):
         self.modules = []
         self.build_temp = None
@@ -69,6 +85,7 @@ class RustBuildCommand(Command):
         )
 
     def run(self):
+        print('[python-rust-ext]modules {}'.format(','.join([m.name for m in self.modules])))
         if self.cargo_clean:
             for module in self.modules:
                 self.clean_module(module)
@@ -81,24 +98,35 @@ class RustBuildCommand(Command):
 
     def clean_module(self, module):
         working_directory = module.get_parent_path()
+        process = None
+
         try:
-            execute_streaming_stdout(['cargo', 'clean'], cwd=working_directory)
+            process = execute_streaming_stdout(['cargo', 'clean'], cwd=working_directory)
         except Exception as e:  # fixme:!!!!
             raise e
+
+        if process and process.returncode != 0:
+            raise RustCleanError()
+        return module
+
 
     def compile_module(self, module):
         args = module.get_compile_command()
         args = self.extend_command_args(args)
 
         working_directory = module.get_parent_path()
+        process = None
 
         try:
-            execute_streaming_stdout(args, cwd=working_directory)
+            process = execute_streaming_stdout(args, cwd=working_directory)
         except sp.CalledProcessError as e:
             # fixme: improve error message
             raise e
         except Exception as e:  # fixme: specify exceptions
             raise e
+
+        if process and process.returncode != 0:
+            raise RustCompileError()
         return module
 
     def deploy(self, module):
