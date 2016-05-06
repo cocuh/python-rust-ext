@@ -48,6 +48,7 @@ youjo.hello.run()
 # TODO
 - [ ] documentation
 - [ ] compatible with python2
+- [ ] logging
 
 # relate works
 - [rust-cpython](https://github.com/dgrunwald/rust-cpython)
