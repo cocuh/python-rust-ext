@@ -16,6 +16,10 @@ class RustCompileError(Exception):
     pass
 
 
+class RustDylibNotFound(Exception):
+    pass
+
+
 def execute_streaming_stdout(args, cwd=None):
     print('[python-rust-ext]execute "{}"'.format(' '.join(args)))
     process = sp.Popen(args, stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True, cwd=cwd)
@@ -53,7 +57,9 @@ class RustModule:
             'target',
             'release' if self.is_release else 'debug',
             '*{ext}'.format(ext=self.get_ext())
-        ))  # XXX: :poop:
+        ))
+        if len(paths) == 0:
+            raise RustDylibNotfound()
         return paths[0]
 
     @staticmethod
