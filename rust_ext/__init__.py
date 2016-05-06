@@ -1,7 +1,6 @@
 import glob
 import os
 from distutils.cmd import Command
-from distutils.command.build_ext import build_ext
 from distutils.command.install_lib import install_lib as _install_lib
 
 import subprocess as sp
@@ -22,7 +21,8 @@ class RustDylibNotFound(Exception):
 
 def execute_streaming_stdout(args, cwd=None):
     print('[python-rust-ext]execute "{}"'.format(' '.join(args)))
-    process = sp.Popen(args, stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True, cwd=cwd)
+    process = sp.Popen(args, stdout=sp.PIPE, stderr=sp.PIPE,
+            universal_newlines=True, cwd=cwd)
     for line in iter(process.stdout.readline, ''):
         sys.stdout.write(line)
         sys.stdout.flush()
@@ -34,7 +34,8 @@ def execute_streaming_stdout(args, cwd=None):
 
 
 class RustModule:
-    def __init__(self, name, cargo_toml_path, is_release=False, color_output=True):
+    def __init__(self, name, cargo_toml_path,
+            is_release=False, color_output=True):
         self.name = name
         self.cargo_toml_path = cargo_toml_path
         self.is_release = is_release
@@ -52,14 +53,14 @@ class RustModule:
         return os.path.dirname(self.cargo_toml_path)
 
     def get_dylib_path(self):
-        paths= glob.glob(os.path.join(
+        paths = glob.glob(os.path.join(
             self.get_parent_path(),
             'target',
             'release' if self.is_release else 'debug',
             '*{ext}'.format(ext=self.get_ext())
         ))
         if len(paths) == 0:
-            raise RustDylibNotfound()
+            raise RustDylibNotFound()
         return paths[0]
 
     @staticmethod
@@ -91,7 +92,9 @@ class RustBuildCommand(Command):
         )
 
     def run(self):
-        print('[python-rust-ext]modules {}'.format(','.join([m.name for m in self.modules])))
+        print('[python-rust-ext]modules {}'.format(
+            ','.join([m.name for m in self.modules]))
+        )
         if self.cargo_clean:
             for module in self.modules:
                 self.clean_module(module)
@@ -107,14 +110,16 @@ class RustBuildCommand(Command):
         process = None
 
         try:
-            process = execute_streaming_stdout(['cargo', 'clean'], cwd=working_directory)
+            process = execute_streaming_stdout(
+                    ['cargo', 'clean'],
+                    cwd=working_directory,
+            )
         except Exception as e:  # fixme:!!!!
             raise e
 
         if process and process.returncode != 0:
             raise RustCleanError()
         return module
-
 
     def compile_module(self, module):
         args = module.get_compile_command()
