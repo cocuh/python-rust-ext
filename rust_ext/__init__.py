@@ -1,25 +1,41 @@
 import glob
 import os
 from distutils.cmd import Command
-from distutils.command.build_ext import build_ext
 from distutils.command.install_lib import install_lib as _install_lib
 
 import subprocess as sp
 import sys
 
 
+class RustCleanError(Exception):
+    pass
+
+
+class RustCompileError(Exception):
+    pass
+
+
+class RustDylibNotFound(Exception):
+    pass
+
+
 def execute_streaming_stdout(args, cwd=None):
-    process = sp.Popen(args, stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True, cwd=cwd)
+    print('[python-rust-ext]execute "{}"'.format(' '.join(args)))
+    process = sp.Popen(args, stdout=sp.PIPE, stderr=sp.PIPE,
+            universal_newlines=True, cwd=cwd)
     for line in iter(process.stdout.readline, ''):
         sys.stdout.write(line)
         sys.stdout.flush()
     for line in iter(process.stderr.readline, ''):
         sys.stderr.write(line)
         sys.stderr.flush()
+    process.wait()
+    return process
 
 
 class RustModule:
-    def __init__(self, name, cargo_toml_path, is_release=False, color_output=True):
+    def __init__(self, name, cargo_toml_path,
+            is_release=False, color_output=True):
         self.name = name
         self.cargo_toml_path = cargo_toml_path
         self.is_release = is_release
@@ -37,12 +53,14 @@ class RustModule:
         return os.path.dirname(self.cargo_toml_path)
 
     def get_dylib_path(self):
-        paths= glob.glob(os.path.join(
+        paths = glob.glob(os.path.join(
             self.get_parent_path(),
             'target',
             'release' if self.is_release else 'debug',
             '*{ext}'.format(ext=self.get_ext())
-        ))  # XXX: :poop:
+        ))
+        if len(paths) == 0:
+            raise RustDylibNotFound()
         return paths[0]
 
     @staticmethod
@@ -57,20 +75,26 @@ class RustModule:
 
 
 class RustBuildCommand(Command):
+    description = "rust build command"
+    user_options = [
+        ('modules=', None, 'rust modules'),
+    ]
+
     def initialize_options(self):
         self.modules = []
-        self.parallel = None
         self.build_temp = None
         self.cargo_clean = False
 
     def finalize_options(self):
         self.set_undefined_options(
                 'build',
-                ('parallel', 'parallel'),
                 ('build_temp', 'build_temp'),
         )
 
     def run(self):
+        print('[python-rust-ext]modules {}'.format(
+            ','.join([m.name for m in self.modules]))
+        )
         if self.cargo_clean:
             for module in self.modules:
                 self.clean_module(module)
@@ -83,24 +107,37 @@ class RustBuildCommand(Command):
 
     def clean_module(self, module):
         working_directory = module.get_parent_path()
+        process = None
+
         try:
-            execute_streaming_stdout(['cargo', 'clean'], cwd=working_directory)
+            process = execute_streaming_stdout(
+                    ['cargo', 'clean'],
+                    cwd=working_directory,
+            )
         except Exception as e:  # fixme:!!!!
             raise e
+
+        if process and process.returncode != 0:
+            raise RustCleanError()
+        return module
 
     def compile_module(self, module):
         args = module.get_compile_command()
         args = self.extend_command_args(args)
 
         working_directory = module.get_parent_path()
+        process = None
 
         try:
-            execute_streaming_stdout(args, cwd=working_directory)
+            process = execute_streaming_stdout(args, cwd=working_directory)
         except sp.CalledProcessError as e:
             # fixme: improve error message
             raise e
         except Exception as e:  # fixme: specify exceptions
             raise e
+
+        if process and process.returncode != 0:
+            raise RustCompileError()
         return module
 
     def deploy(self, module):
@@ -111,8 +148,6 @@ class RustBuildCommand(Command):
         self.copy_file(dylib_path, ext_fullpath)
 
     def extend_command_args(self, args):
-        if self.parallel:
-            args.extend(['--jobs', '-1'])
         return args
 
 build_rust = RustBuildCommand
@@ -120,5 +155,5 @@ build_rust = RustBuildCommand
 
 class install_with_rust(_install_lib):
     def build(self):
-        super(install_with_rust, self).build()
+        _install_lib.build(self)
         self.run_command('build_rust')
