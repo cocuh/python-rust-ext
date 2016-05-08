@@ -5,7 +5,7 @@ extern crate cpython;
 use std::vec;
 use std::thread;
 use std::result;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Barrier};
 use cpython::{PyObject, PyResult, PyInt, Python, PyList, ExtractPyObject, ToPyObject};
 
 py_module_initializer!(math, initmath, PyInit_math, |py, m| {
@@ -34,13 +34,17 @@ fn enum_prime(py: Python, num: i32) -> PyResult<PyList> {
 
 fn sleep_sort(py: Python, items: PyList) -> PyResult<PyList> {
     let result = Arc::new(Mutex::new(Vec::<u32>::new()));
-    items.iter(py)
+    let items = items.iter(py)
         .map(|x|x.extract(py))
         .filter(|x|x.is_ok())
         .map(|x| x.ok().unwrap())
-        .map(|x| {
+        .collect::<Vec<_>>();
+    let barrier = Arc::new(Barrier::new(items.len()));
+    items.into_iter().map(|x| {
             let result = result.clone();
+            let barrier = barrier.clone();
             thread::spawn(move || {
+                barrier.wait();
                 thread::sleep_ms(x * 100);
                 let mut result = result.lock().unwrap();
                 result.push(x);
