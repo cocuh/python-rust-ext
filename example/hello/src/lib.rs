@@ -11,7 +11,7 @@ py_module_initializer!(hello, inithello, PyInit_hello, |py, m| {
     Ok(())
 });
 
-fn run(py: Python, args: &PyTuple, kwargs: &PyDict) -> PyResult<PyString> {
+fn run(py: Python, args: &PyTuple, kwargs: Option<&PyDict>) -> PyResult<PyString> {
     println!("hello youjo!");
     for arg in args.iter(py) {
         println!("Rust got {}", arg);

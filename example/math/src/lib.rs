@@ -6,7 +6,7 @@ use std::vec;
 use std::thread;
 use std::result;
 use std::sync::{Arc, Mutex, Barrier};
-use cpython::{PyObject, PyResult, PyInt, Python, PyList, ExtractPyObject, ToPyObject};
+use cpython::{PyObject, PyResult, PyInt, Python, PyList, FromPyObject, ToPyObject};
 
 py_module_initializer!(math, initmath, PyInit_math, |py, m| {
     try!(m.add(py, "__doc__", "Prime searcher with"));
